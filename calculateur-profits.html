@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculateur de profits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1b1a17;
+    --bg-panel: #232019;
+    --bg-slot: #2b2721;
+    --border: #3d372c;
+    --border-light: #504839;
+    --text: #ece6d6;
+    --text-dim: #a89f8c;
+    --amber: #d99a3f;
+    --amber-dim: #8a6a34;
+    --copper: #b5673a;
+    --good: #7ea672;
+    --bad: #b3564a;
+    --radius: 4px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    background: var(--bg);
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--text);
+    min-height: 100%;
+    background:
+      radial-gradient(circle at 15% 0%, #2a2620 0%, transparent 45%),
+      var(--bg);
+    display: flex;
+    justify-content: center;
+    padding: 40px 18px 60px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 640px;
+  }
+
+  header {
+    margin-bottom: 28px;
+  }
+
+  header .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  header .mark .crate {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--amber);
+    border-radius: 3px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  header .mark .crate::before,
+  header .mark .crate::after {
+    content: "";
+    position: absolute;
+    background: var(--amber);
+  }
+  header .mark .crate::before { top: 0; left: 40%; width: 20%; height: 100%; }
+  header .mark .crate::after { left: 0; top: 40%; height: 20%; width: 100%; }
+
+  header h1 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  header p {
+    color: var(--text-dim);
+    font-size: 0.92rem;
+    margin: 6px 0 0;
+    line-height: 1.5;
+    max-width: 46ch;
+  }
+
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .tab {
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 10px;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .tab:hover { color: var(--text); border-color: var(--border-light); }
+  .tab.active {
+    color: var(--bg);
+    background: var(--amber);
+    border-color: var(--amber);
+  }
+
+  .panel {
+    display: none;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .panel.active { display: block; }
+
+  .panel h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .panel .desc {
+    color: var(--text-dim);
+    font-size: 0.83rem;
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 7px;
+  }
+
+  .row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .row input[type="number"] {
+    flex: 1;
+    min-width: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: var(--bg-slot);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+  .row input[type="number"]:focus,
+  .field input[type="number"]:focus {
+    outline: none;
+    border-color: var(--amber);
+  }
+  .row input[type="number"]::-webkit-outer-spin-button,
+  .row input[type="number"]::-webkit-inner-spin-button { margin: 0; }
+
+  .field > input[type="number"] {
+    width: 100%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: var(--bg-slot);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+
+  .unit-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .unit-toggle button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    background: var(--bg-slot);
+    border: none;
+    padding: 0 12px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .unit-toggle button + button { border-left: 1px solid var(--border); }
+  .unit-toggle button.active {
+    background: var(--amber-dim);
+    color: var(--text);
+  }
+
+  .hint {
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .results {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .results.empty { display: none; }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .result-cell {
+    background: var(--bg-slot);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .result-cell.wide { grid-column: 1 / -1; }
+  .result-cell .k {
+    font-size: 0.74rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .result-cell .v {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+  .result-cell.hero .v { font-size: 1.5rem; }
+  .v.good { color: var(--good); }
+  .v.bad { color: var(--bad); }
+
+  .warning {
+    margin-top: 22px;
+    padding: 12px 14px;
+    background: rgba(179, 86, 74, 0.12);
+    border: 1px solid var(--bad);
+    border-radius: var(--radius);
+    color: #d69a90;
+    font-size: 0.83rem;
+    line-height: 1.5;
+    display: none;
+  }
+  .warning.show { display: block; }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f3efe6;
+      --bg-panel: #ffffff;
+      --bg-slot: #f6f3ec;
+      --border: #ddd5c2;
+      --border-light: #c8bda3;
+      --text: #262117;
+      --text-dim: #6b6252;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark"><span class="crate"></span></div>
+    <h1>Calculateur de profits</h1>
+    <p>Pour vos échanges en jeu. Les prix peuvent être saisis à l'unité ou pour un stack de 64, le calcul se charge de ramener ça au prix d'un seul objet.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="benefice">Bénéfice réalisé</button>
+    <button class="tab" data-tab="objectif">Objectif de profit</button>
+  </div>
+
+  <!-- PANEL 1 : BENEFICE -->
+  <section class="panel active" id="panel-benefice">
+    <h2>Bénéfice réalisé</h2>
+    <p class="desc">Prix d'achat, prix de revente, quantité → le bénéfice total.</p>
+
+    <div class="field">
+      <label for="b-achat">Prix d'achat</label>
+      <div class="row">
+        <input type="number" id="b-achat" inputmode="decimal" placeholder="0" min="0" step="any">
+        <div class="unit-toggle" data-target="b-achat-unite">
+          <button class="active" data-value="1">× 1</button>
+          <button data-value="64">× 64</button>
+        </div>
+      </div>
+      <div class="hint" id="b-achat-hint"></div>
+    </div>
+
+    <div class="field">
+      <label for="b-revente">Prix de revente</label>
+      <div class="row">
+        <input type="number" id="b-revente" inputmode="decimal" placeholder="0" min="0" step="any">
+        <div class="unit-toggle" data-target="b-revente-unite">
+          <button class="active" data-value="1">× 1</button>
+          <button data-value="64">× 64</button>
+        </div>
+      </div>
+      <div class="hint" id="b-revente-hint"></div>
+    </div>
+
+    <div class="field">
+      <label for="b-quantite">Quantité vendue</label>
+      <input type="number" id="b-quantite" inputmode="decimal" placeholder="0" min="0" step="1">
+    </div>
+
+    <div class="results empty" id="b-results">
+      <div class="result-grid">
+        <div class="result-cell hero wide">
+          <div class="k">Bénéfice total</div>
+          <div class="v" id="b-out-total">—</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Bénéfice par unité</div>
+          <div class="v" id="b-out-unitaire">—</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Marge de bénéfice</div>
+          <div class="v" id="b-out-marge-pct">—</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Investissement total</div>
+          <div class="v" id="b-out-invest">—</div>
+        </div>
+        <div class="result-cell wide">
+          <div class="k">Recette totale</div>
+          <div class="v" id="b-out-recette">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 : OBJECTIF -->
+  <section class="panel" id="panel-objectif">
+    <h2>Objectif de profit</h2>
+    <p class="desc">Prix d'achat, prix de revente, profit visé → la quantité et la mise de départ nécessaires.</p>
+
+    <div class="field">
+      <label for="o-achat">Prix d'achat</label>
+      <div class="row">
+        <input type="number" id="o-achat" inputmode="decimal" placeholder="0" min="0" step="any">
+        <div class="unit-toggle" data-target="o-achat-unite">
+          <button class="active" data-value="1">× 1</button>
+          <button data-value="64">× 64</button>
+        </div>
+      </div>
+      <div class="hint" id="o-achat-hint"></div>
+    </div>
+
+    <div class="field">
+      <label for="o-revente">Prix de revente</label>
+      <div class="row">
+        <input type="number" id="o-revente" inputmode="decimal" placeholder="0" min="0" step="any">
+        <div class="unit-toggle" data-target="o-revente-unite">
+          <button class="active" data-value="1">× 1</button>
+          <button data-value="64">× 64</button>
+        </div>
+      </div>
+      <div class="hint" id="o-revente-hint"></div>
+    </div>
+
+    <div class="field">
+      <label for="o-profit">Profit visé</label>
+      <input type="number" id="o-profit" inputmode="decimal" placeholder="0" min="0" step="any">
+    </div>
+
+    <div class="results empty" id="o-results">
+      <div class="result-grid">
+        <div class="result-cell hero wide">
+          <div class="k">Quantité nécessaire</div>
+          <div class="v" id="o-out-quantite">—</div>
+        </div>
+        <div class="result-cell wide">
+          <div class="k">Investissement de départ</div>
+          <div class="v" id="o-out-invest">—</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Marge par unité</div>
+          <div class="v" id="o-out-marge">—</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Marge de bénéfice</div>
+          <div class="v" id="o-out-marge-pct">—</div>
+        </div>
+        <div class="result-cell wide">
+          <div class="k">Recette totale attendue</div>
+          <div class="v" id="o-out-recette">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="warning" id="o-warning">
+      Avec ces prix, la revente ne rapporte pas plus que l'achat : aucune quantité ne permettra d'atteindre ce profit.
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  // --- Tabs ---
+  var tabs = document.querySelectorAll('.tab');
+  var panels = {
+    benefice: document.getElementById('panel-benefice'),
+    objectif: document.getElementById('panel-objectif')
+  };
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      tabs.forEach(function (t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      Object.keys(panels).forEach(function (k) { panels[k].classList.remove('active'); });
+      panels[tab.dataset.tab].classList.add('active');
+    });
+  });
+
+  // --- Unit toggles (x1 / x64) ---
+  var unitState = {}; // target id -> 1 or 64
+  document.querySelectorAll('.unit-toggle').forEach(function (group) {
+    var target = group.dataset.target;
+    unitState[target] = 1;
+    group.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        group.querySelectorAll('button').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        unitState[target] = parseInt(btn.dataset.value, 10);
+        recalc();
+      });
+    });
+  });
+
+  function fmt(n) {
+    if (!isFinite(n)) return '—';
+    var rounded = Math.round(n * 100) / 100;
+    return rounded.toLocaleString('fr-FR', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+  }
+
+  function unitPrice(inputId, toggleTarget) {
+    var raw = parseFloat(document.getElementById(inputId).value);
+    if (isNaN(raw)) return null;
+    var unite = unitState[toggleTarget] || 1;
+    return raw / unite;
+  }
+
+  function updateHint(hintId, inputId, toggleTarget) {
+    var up = unitPrice(inputId, toggleTarget);
+    var el = document.getElementById(hintId);
+    if (up === null) { el.textContent = ''; return; }
+    el.textContent = 'soit ' + fmt(up) + ' / unité';
+  }
+
+  // --- Calculateur 1 : bénéfice ---
+  var bIds = ['b-achat', 'b-revente', 'b-quantite'];
+  bIds.forEach(function (id) {
+    document.getElementById(id).addEventListener('input', recalc);
+  });
+
+  function calcBenefice() {
+    updateHint('b-achat-hint', 'b-achat', 'b-achat-unite');
+    updateHint('b-revente-hint', 'b-revente', 'b-revente-unite');
+
+    var achatU = unitPrice('b-achat', 'b-achat-unite');
+    var reventeU = unitPrice('b-revente', 'b-revente-unite');
+    var qte = parseFloat(document.getElementById('b-quantite').value);
+
+    var box = document.getElementById('b-results');
+    if (achatU === null || reventeU === null || isNaN(qte)) {
+      box.classList.add('empty');
+      return;
+    }
+    box.classList.remove('empty');
+
+    var beneficeUnitaire = reventeU - achatU;
+    var beneficeTotal = beneficeUnitaire * qte;
+    var investTotal = achatU * qte;
+    var recetteTotal = reventeU * qte;
+
+    var totalEl = document.getElementById('b-out-total');
+    totalEl.textContent = (beneficeTotal >= 0 ? '+' : '') + fmt(beneficeTotal);
+    totalEl.className = 'v ' + (beneficeTotal >= 0 ? 'good' : 'bad');
+
+    var unitEl = document.getElementById('b-out-unitaire');
+    unitEl.textContent = (beneficeUnitaire >= 0 ? '+' : '') + fmt(beneficeUnitaire);
+    unitEl.className = 'v ' + (beneficeUnitaire >= 0 ? 'good' : 'bad');
+
+    var margePctEl = document.getElementById('b-out-marge-pct');
+    if (achatU > 0) {
+      var margePct = (beneficeUnitaire / achatU) * 100;
+      margePctEl.textContent = (margePct >= 0 ? '+' : '') + fmt(margePct) + ' %';
+      margePctEl.className = 'v ' + (margePct >= 0 ? 'good' : 'bad');
+    } else {
+      margePctEl.textContent = '—';
+      margePctEl.className = 'v';
+    }
+
+    document.getElementById('b-out-invest').textContent = fmt(investTotal);
+    document.getElementById('b-out-recette').textContent = fmt(recetteTotal);
+  }
+
+  // --- Calculateur 2 : objectif de profit ---
+  var oIds = ['o-achat', 'o-revente', 'o-profit'];
+  oIds.forEach(function (id) {
+    document.getElementById(id).addEventListener('input', recalc);
+  });
+
+  function calcObjectif() {
+    updateHint('o-achat-hint', 'o-achat', 'o-achat-unite');
+    updateHint('o-revente-hint', 'o-revente', 'o-revente-unite');
+
+    var achatU = unitPrice('o-achat', 'o-achat-unite');
+    var reventeU = unitPrice('o-revente', 'o-revente-unite');
+    var profitVise = parseFloat(document.getElementById('o-profit').value);
+
+    var box = document.getElementById('o-results');
+    var warn = document.getElementById('o-warning');
+
+    if (achatU === null || reventeU === null || isNaN(profitVise)) {
+      box.classList.add('empty');
+      warn.classList.remove('show');
+      return;
+    }
+
+    var margeUnitaire = reventeU - achatU;
+
+    if (margeUnitaire <= 0) {
+      box.classList.add('empty');
+      warn.classList.add('show');
+      return;
+    }
+
+    warn.classList.remove('show');
+    box.classList.remove('empty');
+
+    var quantite = Math.ceil(profitVise / margeUnitaire);
+    var investDepart = quantite * achatU;
+    var recetteAttendue = quantite * reventeU;
+
+    document.getElementById('o-out-quantite').textContent = fmt(quantite) + ' unité' + (quantite > 1 ? 's' : '');
+    document.getElementById('o-out-invest').textContent = fmt(investDepart);
+    document.getElementById('o-out-marge').textContent = '+' + fmt(margeUnitaire);
+
+    var oMargePctEl = document.getElementById('o-out-marge-pct');
+    if (achatU > 0) {
+      var oMargePct = (margeUnitaire / achatU) * 100;
+      oMargePctEl.textContent = '+' + fmt(oMargePct) + ' %';
+      oMargePctEl.className = 'v good';
+    } else {
+      oMargePctEl.textContent = '—';
+      oMargePctEl.className = 'v';
+    }
+
+    document.getElementById('o-out-recette').textContent = fmt(recetteAttendue);
+  }
+
+  function recalc() {
+    calcBenefice();
+    calcObjectif();
+  }
+
+  recalc();
+})();
+</script>
+</body>
+</html>
